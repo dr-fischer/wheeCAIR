@@ -1,9 +1,15 @@
 # WheeCAIR
 Cullowhee Clean Air Sensor
 
-# Directory Structure
+# Hardware
 
-`./location-code/year/YYYYMMDD_sensorCode.txt`
+# Firmware
+
+# Data
+
+## Directory Structure
+
+`./data/location-code/year/YYYYMMDD_sensorCode.txt`
 
 ### Location Codes:
   - **grsm-purchase:** Great Smoky Mountains National Park - Purchase Knob
