@@ -9,6 +9,8 @@ Cullowhee Clean Air Sensor
 
 ## Directory Structure
 
+### Generalized Directory Structure
+
 `./data/location-code/year/YYYYMMDD_sensorCode.txt`
 
 ### Location Codes:
