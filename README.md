@@ -15,5 +15,5 @@ Cullowhee Clean Air Sensor
 
 ### Location Codes:
   - **grsm-purchase:** Great Smoky Mountains National Park - Purchase Knob
-  - **mack:** Macktown Gap, Sylva, NC
+  - **mack:** Dillsboro, NC
   - **wcu-nsb:** Western Carolina University - Natural Science Building (co-located with PM10 inlet)
