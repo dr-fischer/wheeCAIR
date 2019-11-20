@@ -1,2 +1,11 @@
 # WheeCAIR
 Cullowhee Clean Air Sensor
+
+# Directory Structure
+
+`./location-code/year/YYYYMMDD_sensorCode.txt`
+
+### Location Codes:
+  - **grsm-purchase:** Great Smoky Mountains National Park - Purchase Knob
+  - **mack:** Macktown Gap, Sylva, NC
+  - **wcu-nsb:** Western Carolina University - Natural Science Building (co-located with PM10 inlet)
