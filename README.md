@@ -44,7 +44,7 @@ Cullowhee Clean Air Sensor
 
 ## Directory Structure
 
-### Generalized Directory Structure
+The generalized directory structure is:
 
 `./data/location-code/year/YYYYMMDD_sensorCode.txt`
 
