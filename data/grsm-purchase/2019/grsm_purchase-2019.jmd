@@ -1,0 +1,437 @@
+---
+title: Monitoring Air Quality in the Great Smoky Mountains with a Network of Low-cost Air Quality Sensors
+---
+
+**Al Fischer, PhD**  
+
+Instrumentation Specialist | Department of Chemistry and Physics | Western Carolina University  
+
+dfischer@wcu.edu    
+
+# Introduction
+
+For decades, air quality regulators have relied government-sponsored air quality monitoring sites to ensure regulatory compliance (attainment) of air quality standards. These sites house instrumentation that meets the analytical standards set forth by the Environmental Protection Agency (Federal Equivalent Methods, FEMs) and provide exceptionally high-quality data. However, such instrumentation involves a large up- front purchase price and the sites can be costly to maintain and sometimes subject to political will. Although this approach has overall led to stark improvements in air quality nationwide, it has created a relatively sparse network of sensors that may neglect hyperlocal conditions such as areas directly downwind from a point- source of air pollution (e.g. a factory) or in a mountain cove where many residents heat with wood. (*1*)
+
+Over the past decade, improvements in low-cost and open-source microcontrollers combined with rapid development and cost-reductions in environmental sensors have made it possible to take a new approach to monitoring air quality. It is now possible to deploy dozens of low-cost ($100-200) sensors for much less than the price of one regulatory site, which enables collection of hyperlocal data and offers an opportunity to involve non-scientists in data collection through citizen science. (*2*) Such an approach has been used for decades by the Audubon Society with their annual Backyard Bird Count, by Weather Underground in the collection of weather data, and – more recently – by Purple Air in the collection particulate matter data. Although some sacrifices are made in data quality, such as lower sensitivity and a need to focus on relative (rather than absolute) trends, these sacrifices are somewhat offset by the high spatial resolution and redundancy inherent in a network of many sensors where there was previously only one. Moreover, similar studies have found such sensors “may indeed be suitable for air quality, health, and urban aerosol research” when comparing to FEMs. (*3*)
+
+During this study, students enrolled in Chemistry 191: Issues in Environmental Chemistry at Western Carolina University will develop low-cost sensors capable of being deployed in a network such as that discussed above. Each sensor will measure temperature, relative humidity, barometric pressure, volatile organic carbon (VOC) abundance, and concentration of particulate matter less than 2.5 μm in diameter
+(PM2.5) and will cost roughly $100. Once complete, the sensors will be deployed for a field campaign at a “pristine” site at Purchase Knob in the Great Smoky Mountains National Park and at a rural-urban site in Sylva, NC.
+Note that this is a primarily educational project that aims to engage students in learning about air quality and chemical analysis. The student goals of the study are to: (1) compare PM2.5 levels between a pristine and urban site and track changes in PM2.5 levels at both sites during the transition from fall into winter, (2) look for correlations between the sensors’ VOC readings and ozone concentrations reported by the North Carolina Department of Environmental Quality ozone sensor installed at Purchase Knob, and (3) validate the sensors’ temperature, humidity, and pressure readings against the research-grade weather station installed at Purchase Knob.
+
+# Materials and Methods
+
+**Table 1: Sensors Used**  
+
+| Measurement                     | Sensor                  |
+| ------------------------------- | ----------------------- |
+| Particulate Matter (PM$_{2.5}$) | Honeywell HPMA115S0-XXX |
+| Volatile Organic Carbon (VOC)   | Bosch BME-680           |
+| Temperature                     | Bosch BME-680           |
+| Relative Humidity               | Bosch BME-680           |
+| Pressure                        | Bosch BME-680           |
+
+
+
+# Results and Data Processing
+
+Data are archived and freely [available on GitHub](https://github.com/dr-fischer/WheeCAIR).  The structure of the data repository is as follows:
+
+```
+WheeCAIR
+       |----- data
+       |         |----- [location] (see codes below)
+       |                       |----- [year] > [date_sensorName].txt
+       |                                 |   > [location-year].jmd or .jl - Julia data processing code
+       |                                 |   > [location-year].html - HTML formatted lab notebook
+       |                                 |----- datasheets > datasheets completed at deployment
+       |                                 |----- img > Webcam/weather images (if available)
+       |                                 |----- met > meteorology data (if available)
+       |                                 |----- plots > PDFs of key figures
+       |----- firmware > code used program sensors
+       |----- hardware > hardware info
+```
+
+## Initial Look at the Data
+
+Data processing is done using the open-source language [Julia](https://julialang.org/).  To aid in data processing, I will use several additional packages.  The following code will import those packages.  They can be installed first with `import Pkg; Pkg.add("PackageName")` if necessary.
+
+```julia
+using CSV # used to read CSV files easily
+using DataFrames # used for R- or Pandas-like data frames
+using Plots # used for plotting
+using Dates # used for timestaps
+using Statistics # statistical tools
+using StatsPlots  # boxplots
+using Query # DataFrame queries
+```
+
+Of course the first step is to import the data:
+
+```julia
+X = CSV.read.(
+        joinpath.(pwd(), filter!(s -> occursin(r"\.TXT", s), readdir()),),
+        header = false,
+    );
+```
+
+The next steps give the columns names and then formats the time column correctly.  Note that Daylight Saving Time ended on November 3, 2019 and that the sensor clocks do not update. This will be fixed here as well.
+
+```julia
+for i = 1:length(X)
+    rename!(X[i], [:Sensor, :Timestamp, :T, :RH, :P, :VOC, :PM]) # give columns logical names
+    X[i][!, :Timestamp] = Dates.DateTime.(X[i][!, 2], "YYYY-mm-dd HH:MM:SS") # convert from string to time
+    X[i][X[i][:, :Timestamp].>Dates.DateTime("2019-11-03T02:00:00"), 2] =
+        X[i][X[i][:, :Timestamp].>Dates.DateTime("2019-11-03T02:00:00"), 2] .+
+        Dates.Hour(-1) # Subtract one hour for DLST
+end
+```
+
+Now I can take a quick glance at the data.  I will look at the temperature data and PM data to see if I can spot any problems.
+
+```julia
+
+p = plot(grid = false, legend = :outertopright, 
+    framestyle = :box, fg_legend = :transparent
+)
+for i = 1:length(X)
+    p = plot!(
+        X[i][!, :Timestamp], X[i][!, :P],
+        label = X[i][1, :Sensor] 
+   )
+end
+xlabel!("Timestamp"); ylabel!("Temperature (°C)");
+display(p)
+```
+
+I note several issues:
+
+- The EBAM sensor has a timing issue -- the real-time clock reset to the programming time upon deployment. (time shifted)
+- The APBW sensor did not collect data. (0 reading throughout deployment)
+- The sensors were not turned off until returning to Dillsboro, NC. (spike in pressure at end of deployment)
+- Harder to see is that the CBALEJ sensor only collected data unil about 2019-11-05 and will have fewer data points than the rest.
+
+```julia
+# fix EBAM problem:
+X[1][!, 2] = X[1][!, 2] + (X[2][1, 2] - X[1][1, 2]);
+
+# remove APBW data:
+deleteat!(X, 3);
+
+# remove last bit after leaving GRSM with sensors still running:
+for i in 1:length(X)
+    X[i] = X[i][1:end-50, :]
+end
+```
+
+Now, plotting the corrected data using the previous plotting code it looks much better:
+
+```julia echo = false
+p = plot(
+        ylim=(825, 875),
+        grid = false, legend = :outertopright, 
+        framestyle = :box, fg_legend = :transparent    
+    )
+for i = 1:length(X)
+    p = plot!(
+        X[i][!, :Timestamp], X[i][!, :P],
+        label = X[i][1, 1]
+    )
+end
+xlabel!("Timestamp"); ylabel!("Temperature (°C)");
+display(p)
+```
+
+Examining the rest of the data:
+
+```julia
+axis_labs = ["Temperature (°C)", "RH (%)", "Pressure (mbar)", "VOC (arb.)", "PM (\\mug / m³)"];
+for ci = 3:7 # data columns for plotting as y
+    p = plot(
+        label = X[1][1, 1],
+        grid = false
+    )
+    for i = 1:length(X)
+        p = plot!(
+            X[i][!, 2], X[i][!, ci],
+            label = X[i][1, 1],
+            legend = :outertopright
+        )
+    end
+    xlabel!("Timestamp"); ylabel!(axis_labs[ci-2])
+    display(p)
+end
+```
+
+## Bosch BME-680 Performance
+
+The Bosch BME-680 will be compared to the data from the NOAA weather station located at Purchase Knob.
+
+```julia
+noaa = CSV.read("met/222X.DAT", skipto = 5, header = false);
+rename!(noaa, Symbol.(Array(CSV.read("met/222X.DAT", skipto = 2, limit = 1, header = false)[1, :])));
+noaa[!, :TIMESTAMP] = Dates.DateTime.(noaa[!, :TIMESTAMP], "YYYY-mm-dd HH:MM:SS");
+noaa = noaa[noaa[!, :TIMESTAMP] .> minimum(X[1][!, :Timestamp]), :];
+noaa = noaa[noaa[!, :TIMESTAMP] .< maximum(X[1][!,  :Timestamp]), :];
+noaa[noaa[!, :RH_Avg] .> 100, :RH_Avg] .= Ref(100);
+```
+### Temperature
+
+Data from NOAA is provided every 15 minutes.  Data from wheeCAIR sensor is provided every 10 minutes.  Data for both will be aggregated into 1-hour averages for this reason.
+
+I added a 20 minute offset.
+
+```julia
+noaa[!, :Hour] = floor.(noaa[!, :TIMESTAMP], Dates.Hour);
+noaa_mean = DataFrame(
+    Timestamp = unique(noaa[!, :Hour]),
+    T = aggregate(noaa[!, [:AirTC_Avg, :Hour]], :Hour, mean)[!, :AirTC_Avg_mean],
+    RH = aggregate(noaa[!, [:RH_Avg, :Hour]], :Hour, mean)[!, :RH_Avg_mean]
+);
+
+whee_mean = []
+for i in 1:length(X)
+    X[i][!, :Hour] = floor.(X[i][!, :Timestamp] - Dates.Minute(60), Dates.Hour);
+    df = X[i][!, [:T, :Hour]]
+    insert!(whee_mean, i, DataFrame(
+        Timestamp = unique(df[!, :Hour]),
+        T = aggregate(X[i][!, [:T, :Hour]], :Hour, mean)[!, :T_mean],
+        RH = aggregate(X[i][!, [:RH, :Hour]], :Hour, mean)[!, :RH_mean],
+        Sensor = X[i][1, :Sensor]
+    ))
+end
+```
+
+```julia
+t_ts = plot(grid = false, legend = :outertopright, 
+    framestyle = :box, fg_legend = :transparent,
+    ylims = (-20, 30)
+)
+for i = 1:length(whee_mean)
+    p = plot!(
+        whee_mean[i][!, :Timestamp], whee_mean[i][!, :T],
+        label = whee_mean[i][1, :Sensor] 
+   )
+end
+plot!(noaa_mean[!, :Timestamp], noaa_mean[!, :T], label = "NOAA")
+xlabel!("Timestamp"); ylabel!("Temperature (°C)");
+savefig("plots/temp_timeseries.pdf")
+display(t_ts)
+```
+
+```julia
+t_scatter = scatter(
+    grid = false, legend = :topleft, 
+    framestyle = :box, fg_legend = :transparent,
+    xlims = (-20, 30), ylims = (-20, 30),
+)
+for i in 1:length(whee_mean)
+    scatter!(
+        noaa_mean[1:nrow(whee_mean[i]), :T], 
+        whee_mean[i][!, :T], label = whee_mean[i][1, :Sensor]
+    )
+end
+one_to_one(x) = 1*x+0;
+plot!(one_to_one, -30, 40, color = :black, linestyle = :dash, label = "1:1")
+ylabel!("Temperature-wheeCAIR (°C)"); xlabel!("Temperature-NOAA (°C)");
+savefig("plots/temp_scatter.pdf")
+display(t_scatter)
+```
+
+```julia
+t_box = plot(
+    legend = :none, fg_legend = :transparent,
+    framestyle = :box,
+    ylims = (-10, 15)
+    )
+for i in 1:length(whee_mean)
+    violin!(
+        whee_mean[i][!, :Sensor], whee_mean[i][!, :T] .- noaa_mean[1:nrow(whee_mean[i]), :T],
+        label = whee_mean[i][1, :Sensor]
+    )
+end
+for i in 1:length(whee_mean)
+    boxplot!(
+        whee_mean[i][!, :Sensor], whee_mean[i][!, :T] .- noaa_mean[1:nrow(whee_mean[i]), :T],
+        label = nothing, fill = :transparent, marker = :gray
+    )
+end
+xlabel!("Sensor Number"); ylabel!("\\Delta T (°C vs. NOAA)")
+savefig("plots/temp_boxplot.pdf")
+display(t_box)
+```
+
+```julia
+rh_box = plot(
+    legend = :none, fg_legend = :transparent,
+    framestyle = :box,
+    ylims = (-100, 100)
+)
+for i in 1:length(whee_mean)
+    violin!(
+        whee_mean[i][!, :Sensor], whee_mean[i][!, :RH] .- noaa_mean[1:nrow(whee_mean[i]), :RH],
+        label = whee_mean[i][1, :Sensor]
+    )
+end
+for i in 1:length(whee_mean)
+    boxplot!(
+        whee_mean[i][!, :Sensor], whee_mean[i][!, :RH] .- noaa_mean[1:nrow(whee_mean[i]), :RH],
+        label = nothing, fill = :transparent, marker = :gray
+    )
+end
+
+
+xlabel!("Sensor Number"); ylabel!("\\Delta RH (% vs. NOAA)")
+savefig("plots/rh_boxplot.pdf")
+display(rh_box)
+```
+
+```julia
+rh_scatter = scatter(
+    grid = false, legend = :topleft, 
+    framestyle = :box, fg_legend = :transparent,
+    xlims = (0, 100), ylims = (0, 100),
+)
+for i in 1:length(whee_mean)
+    scatter!(
+        noaa_mean[1:nrow(whee_mean[i]), :RH], 
+        whee_mean[i][!, :RH], label = whee_mean[i][1, :Sensor]
+    )
+end
+plot!(one_to_one, -10, 110, color = :black, linestyle = :dash, label = "1:1")
+ylabel!("RH-wheeCAIR (%)"); xlabel!("RH-NOAA (%)");
+savefig("plots/rh_scatter.pdf")
+display(rh_scatter)
+```
+
+## Exploring PM Data
+
+```julia
+using Query
+rh_over80 = @from i in noaa begin
+     @where i.RH_Avg > 80
+     @select {Timestamp = i.TIMESTAMP}
+     @collect DataFrame
+ end
+
+pm_ts = plot(
+    grid = false, legend = :outertopright, 
+    framestyle = :box, fg_legend = :transparent,
+    ylim = (0, 1000)
+)
+for i in 1:length(X)
+    plot!(
+        X[i][!, :Timestamp], X[i][!, :PM],
+        label = X[i][1, :Sensor]
+    )
+end
+plot!(rh_over80[!, :Timestamp], seriestype = :vline, alpha = 0.1, color = "#1E90FF", label = "RH > 80%")
+xlabel!("Timestamp"); ylabel!("[PM] \\mug / m³")
+display(pm_ts)
+```
+
+Note the large spikes.  This is unexpected.  The sensors saturate just under 1000 μg/m$^3$, so many of these spikes represent saturated sensor conditions.  This site should not be experiencing PM concentration that high so often, so this is likely a sensor issue.
+
+One expected source of error is fog.  The RH readings from the NOAA weather station seem to corroborate this, as spikes are observed everywhere RH > 80%.
+
+An image from the webcam on 2019-10-30 12:00 EDT (shown below) confirms fog was present; likewise, spot checking images from other times indicates the same.
+
+These data will be excluded from further anlaysis.
+
+![A Purchase Knob webcam image from 2019-10-30 12:00 EDT showing fog present.](img/grpk201910301100.jpg)
+*A Purchase Knob webcam image from 2019-10-30 12:00 EDT showing fog present. [National Park Service/public domain]*
+
+```julia
+for i in 1:length(X)
+    X[i][X[i][!, :RH] .> 80, :PM] .= Ref(NaN);
+end
+```
+
+```julia
+whee_pm = [];
+for i in 1:length(X)
+    X[i][!, :Hour] = floor.(X[i][!, :Timestamp] - Dates.Minute(60), Dates.Hour);
+    df = X[i][!, [:T, :Hour]]
+    insert!(whee_pm, i, DataFrame(
+        Timestamp = unique(df[!, :Hour]),
+        PM = aggregate(X[i][!, [:PM, :Hour]], :Hour, mean)[!, :PM_mean],
+        Sensor = X[i][1, :Sensor]
+    ))
+end
+pm_ts = plot(
+    grid = false, legend = :outertopright, 
+    framestyle = :box, fg_legend = :transparent
+    # ylim = (0, 20)
+)
+for i in 1:length(whee_pm)
+    plot!(
+        whee_pm[i][!, :Timestamp], whee_pm[i][!, :PM],
+        label = whee_pm[i][1, :Sensor]
+    )
+end
+xlabel!("Timestamp"); ylabel!("[PM] (\\mug / m³)");
+savefig("plots/pm_timeseries.pdf");
+display(pm_ts)
+```
+
+```julia
+pm_scatter = plot(
+    grid = false, legend = :bottomright, 
+    framestyle = :box, fg_legend = :transparent,
+    xlims = (0, 10), ylims = (0, 10)
+)
+for i in 1:(length(whee_pm)-1)
+    mini = min(nrow(whee_pm[i]), nrow(whee_pm[length(whee_pm)]));
+    scatter!(
+        whee_pm[length(whee_pm)][1:mini, :PM], whee_pm[i][1:mini, :PM],
+        label = string(whee_pm[i][1, :Sensor], " vs. VBAC")
+    )
+end
+plot!(one_to_one, -5, 15, color = :black, linestyle = :dash, label = "1:1")
+xlabel!("[PM]-VBAC (\\mug / m³)"); ylabel!("[PM]-Other (\\mug / m³)");
+savefig("plots/pm_scatter.pdf");
+display(pm_scatter)
+```
+
+# References
+
+1. Julien J. Caubel, Troy E. Cados, Chelsea V. Preble, and Thomas W. Kirchstetter. “A Distributed Network of 100 Black Carbon Sensors for 100 Days of Air Quality Monitoring in West Oakland, California” Environmental Science & Technology **2019** 53 (13): 7564-7573. DOI: 10.1021/acs.est.9b00282
+2. Nuria Castell, Franck R. Dauge, Philipp Schneider, Matthias Vogt, Uri Lerner, Barak Fishbain, David Broday, Alena Bartonova. “Can commercial low-cost sensor platforms contribute to air quality monitoring and exposure estimates?” Environment International **2017** 99: 293-302. DOI: [10.1016/j.envint.2016.12.007](doi.org/10.1016/j.envint.2016.12.007)
+3. Brian I. Magi, Calvin Cupini, Jeff Francis, Megan Green & Cindy Hauser. “Evaluation of PM2.5 measured in an urban setting using a low-cost optical particle counter and a Federal Equivalent Method Beta Attenuation Monitor”, Aerosol Science and Technology, **2013** 47:564-573. DOI: 10.1080/02786826.2019.1619915
+
+
+# Appendix 1: Bill of Materials
+
+**Table S.1: Bill of Materials for wheeCAIR sensor**  
+
+| Item                                      | PN                     | Price   | Qty | Supplier |
+| ----------------------------------------- | ---------------------- | ------- | --- | -------- |
+| Sensor, BME 680                           | 1597-1653-ND           | $20.910 | 1   | digikey  |
+| Sensor, PM, Honeywell                     | 785-HPMA115SO-XXX      | $26.340 | 1   | mouser   |
+| Micro SD                                  | SDSDQM-B35A            | $4.500  | 1   | Amazon   |
+| Teensy 3.5                                | 1568-1443-ND           | $26.250 | 1   | digikey  |
+| USB Cable                                 | WM25438-ND             | $3.710  | 1   | digikey  |
+| Case                                      | Lowe's                 | $7.150  | 1   | Lowe's   |
+| Case Port                                 | Lowe's                 | $1.690  | 0.5 | Lowe's   |
+| Breadboard                                | 1738-1326-ND           | $2.990  | 1   | digikey  |
+| Wire, Hookup, Assortment, 10x25'          | 485-3174               | $29.950 | 0.1 | mouser   |
+| Pin headers, Breakaway, 36 position, 0.1" | WM50014-36-ND          | $0.901  | 2   | digikey  |
+| LED, RGB                                  | 1830-1014-ND           | $0.829  | 1   | digikey  |
+| Resistor, 220 ohm                         | CF12JT220RCT-ND        | $0.072  | 1   | digikey  |
+| Thermistor                                | BC2301-ND              | $0.660  | 1   | digikey  |
+| Resistor, 1k                              | S1KQTR-ND              | $0.004  | 1   | digikey  |
+| Capacitor, Electrolytic, 1000uF           | P19639TB-ND            | $0.310  | 1   | digikey  |
+| Relay                                     | TLP222AF-ND            | $1.013  | 1   | digikey  |
+| Header, 5 Position, 0.1                   | S6103-ND               | $0.443  | 1   | digikey  |
+| Header, 24 Position, 0.1                  | S7022-ND               | $1.244  | 2   | digikey  |
+| Retainer, Coin Cell, 12 MM, SMD           | 36-3000CT-ND           | $0.767  | 1   | digikey  |
+| Terminal, 4 Position, 3.5 mm              | WM7860-ND              | $1.121  | 2   | digikey  |
+| Terminal, 2 Position, 3.5 mm              | WM7877-ND              | $0.718  | 1   | digikey  |
+| Batteries, AA, Duracell Procell, 2900 mAh | PC1500BKD              | $0.520  | 6   | Grainger |
+| Batteries, Coin Cell, CR1220              | P033-ND                | $0.828  | 1   | digikey  |
+| Wire, PicoBlade, Pre-crimped, black       | 0500798000-10-B8-ND    | $0.676  | 1   | digikey  |
+| Wire, PicoBlade, Pre-crimped, yellow      | 0500798000-10-Y8-ND    | $0.676  | 1   | digikey  |
+| Wire, PicoBlade, Pre-crimped, red         | 0500798000-10-R8-ND    | $0.676  | 1   | digikey  |
+| Wire, PicoBlade, Pre-crimped, violet      | 0500798000-10-V8-ND    | $0.676  | 1   | digikey  |
+| PCB, Custom                               | WheeCAIR v1.0 (custom) | $6.820  | 1   | OSH Park |
+
+*Prices are accurate as of December 2019.*
