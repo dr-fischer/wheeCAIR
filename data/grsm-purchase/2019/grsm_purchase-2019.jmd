@@ -50,7 +50,7 @@ The sensors were deployed at The Appalachian Highlands Science Learning Center n
 
 # Results and Data Processing
 
-Data are archived and freely [available on GitHub](https://github.com/dr-fischer/WheeCAIR).  The structure of the data repository is as follows:
+Data are archived and freely [available on GitHub](https://github.com/dr-fischer/WheeCAIR).  Please attribute the author if you use the data or design for the sensor.  The structure of the data repository is as follows:
 
 ```
 WheeCAIR
@@ -194,7 +194,7 @@ noaa[noaa[!, :RH_Avg] .> 100, :RH_Avg] .= Ref(100);
 
 Data from NOAA is provided every 15 minutes.  Data from wheeCAIR sensor is provided every 10 minutes.  Data for both will be aggregated into 1-hour averages for this reason.
 
-I added a 60 minute offset.
+It appears there was a 1-hour offset between the NOAA and wheeCAIR sensors; I removed this offset.
 
 ```julia
 noaa[!, :Hour] = floor.(noaa[!, :TIMESTAMP], Dates.Hour);
@@ -259,7 +259,7 @@ The scatter plot above shows all wheeCAIR temperature readings against the NOAA 
 t_box = plot(
     legend = :none, fg_legend = :transparent,
     framestyle = :box,
-    ylims = (-10, 15)
+    ylims = (-10, 15), xlims = (0,8)
     )
 for i in 1:length(whee_mean)
     violin!(
@@ -273,12 +273,14 @@ for i in 1:length(whee_mean)
         label = nothing, fill = :transparent, marker = :gray
     )
 end
+hline!([1, -1], linestyle = :dash)
+
 xlabel!("Sensor Number"); ylabel!("\\Delta T (°C vs. NOAA)")
 savefig("plots/temp_boxplot.pdf")
 display(t_box)
 ```
 
-The box and violin plot above shows the statistics and distribution for of the difference in temperature measured by each wheeCAIR sensor and the NOAA station.  In other words, all sensors should show a tight distribution around 0 if accurate. The manufacturer specifies a temperature accuracy of ±1°C for the BME-680, and all sensors showed a median difference (shown as the middle line on the box plots) within that error.  However, all sensors showed deviation far outside this range at time.  It appears the more exposed sensors had larger fluctuations in temperature (as would be expected).  For example, the EBAM sensor was installed on the side of the air-quality shed at Purchase Knob and received more direct sunlight than any other sensor.  Resultantly, it often reads higher temperature than the others.  Likewise, the CBALEJ, AHRR, and RRMD sensors were the most sheltered (located under in the forest under tree cover) and showed the smallest spreads compared to the NOAA sensor.  It's unclear how much of this spread is due to siting and/or sensor design and how much is due to imprecision in the sensor itself at this point.
+The box and violin plot above shows the statistics and distribution for of the difference in temperature measured by each wheeCAIR sensor and the NOAA station.  In other words, all sensors should show a tight distribution around 0 if accurate. The manufacturer specifies a temperature accuracy of ±1°C for the BME-680 , and all sensors showed a median difference (median shown as the middle line on the box plots) within that error (dashed lines represent ±1°C).  However, all sensors showed deviation far outside this range at times.  It appears the more exposed sensors had larger fluctuations in temperature (as would be expected).  For example, the EBAM sensor was installed on the side of the air-quality shed at Purchase Knob and received more direct sunlight than any other sensor.  Resultantly, it often reads higher temperature than the others.  Likewise, the CBALEJ, AHRR, and RRMD sensors were the most sheltered (located under in the forest under tree cover) and showed the smallest spreads compared to the NOAA sensor.  It's unclear how much of this spread is due to siting and/or sensor design and how much is due to imprecision in the sensor itself at this point.
 
 
 ```julia
@@ -305,7 +307,7 @@ The scatter plot above shows all wheeCAIR RH readings against the NOAA weather s
 rh_box = plot(
     legend = :none, fg_legend = :transparent,
     framestyle = :box,
-    ylims = (-100, 100)
+    ylims = (-100, 100), xlims = (0, 8)
 )
 for i in 1:length(whee_mean)
     violin!(
@@ -319,14 +321,13 @@ for i in 1:length(whee_mean)
         label = nothing, fill = :transparent, marker = :gray
     )
 end
-
-
+hline!([3, -3], linestyle = :dash)
 xlabel!("Sensor Number"); ylabel!("\\Delta RH (% vs. NOAA)")
 savefig("plots/rh_boxplot.pdf")
 display(rh_box)
 ```
 
-The box and violin plot above shows the statistics and distribution for of the difference in relative humidity measured by each wheeCAIR sensor and the NOAA station.  In other words, all sensors should show a tight distribution around 0 if accurate. The manufacturer specifies a temperature accuracy of ±3% RH for the BME-680, and all sensors showed a median difference (shown as the middle line on the box plots) within that error.  However, all sensors showed deviation far outside this range at time.  It appears the more exposed sensors had larger fluctuations in temperature (as would be expected).  For example, the EBAM sensor was installed on the side of the air-quality shed at Purchase Knob and received more direct sunlight than any other sensor.  Resultantly, it often reads higher temperature than the others.  Likewise, the CBALEJ, AHRR, and RRMD sensors were the most sheltered (located under in the forest under tree cover) and showed the smallest spreads compared to the NOAA sensor.  It's unclear how much of this spread is due to siting and/or sensor design and how much is due to imprecision in the sensor itself at this point.
+The box and violin plot above shows the statistics and distribution for of the difference in relative humidity measured by each wheeCAIR sensor and the NOAA station.  In other words, all sensors should show a tight distribution around 0 if accurate. The manufacturer specifies a temperature accuracy of ±3% RH for the BME-680, and most sensors showed a median difference outside that range. (shown as the middle line on the box plots) within that error (dashed lines on the plot at ±3% RH).  Further, all sensors showed deviation far outside this range at times.  It appears the more exposed sensors had larger fluctuations in temperature (as would be expected).  There is no apparent trend with location or siting of the sensors, so I must conclude that this is likely due to inaccuracies in the BME-680 sensors and not due to poor siting of the wheeCAIR sensors.
 
 ## Exploring PM Data
 
@@ -417,7 +418,9 @@ savefig("plots/pm_scatter.pdf");
 display(pm_scatter)
 ```
 
-# Conlcusions & Future Directions
+After excluding data collected during periods of high humidity, the PM data seem to more-or-less agree with each other.  The scatter plot above shows all sensors plotted against the arbitrarily chosen VBAC sensor; the 1:1 line is shown as the dashed line for comparison.  Again, individual best fits for all sensors are not shown in the pursuit of providing a clear graphic.  Notabely, the CBALEJ sensor was very low throughout the run, indicating a potential problem with this specific sensor that did not exist with the others.  Likewise, the RRMD sensor was often higher than the others, although the co-located AHRR sensor does not appear to show such large spikes.  Again, this seems likely to be due to tha sensor manufacturing distribution rather than atmospheric phenomena.
+
+# Conclusions & Future Directions
 
 The goal of this study was to allow students to conduct a first test of their wheeCAIR sensors in a realistic environment.  In general, the sensors performed well.  Difference in meterology readings compared to the NOAA station are either within the error specification of the sensors, or can be explained by poor siting/exposure (e.g. sensors that read higher temperatures were often exposed to direct sunlight).  In general, PM readings seem to correlate well between sensors, although it's impossible to say from this data if they are accurate.  Future work will compare the sensors to a federal equivalent monitor to test accuracy.  Future work will also explore the differences observed in the meteorology data and attempt to identify/employ better siting protocols to avoid inaccuracies in the data.
 
@@ -489,3 +492,9 @@ The major problem noted during the study was the susceptibility of the sensors t
 | NCZV        | 17 N 312077 3940168   | 35.58741 | -83.07418 | Field/Under Rhododendron |
 | RRMD        | 17 N 302441 3940375   | 35.58740 | -83.18052 | Forest                   |
 | VBAC        | 17 N 312071 3940169   | 35.58742 | -83.07424 | Forest Edge              |
+
+# Acknowledgements
+
+This work was completed by students in the CHEM 191: Issues in Environmental Chemistry seminar at Wester Carolina University during Fall 2019.  It was funded by the Department of Chemistry and Physics at Western Carolina University.
+
+This work was conducted under National Park Service Study # GRSM-02097, permit # GRSM-2019-SCI-2097.  Special thanks is attributed to Paul Super and Rhonda Wise for facilitating the project.
