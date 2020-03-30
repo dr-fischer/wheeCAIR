@@ -418,13 +418,15 @@ savefig("plots/pm_scatter.pdf");
 display(pm_scatter)
 ```
 
-After excluding data collected during periods of high humidity, the PM data seem to more-or-less agree with each other.  The scatter plot above shows all sensors plotted against the arbitrarily chosen VBAC sensor; the 1:1 line is shown as the dashed line for comparison.  Again, individual best fits for all sensors are not shown in the pursuit of providing a clear graphic.  Notabely, the CBALEJ sensor was very low throughout the run, indicating a potential problem with this specific sensor that did not exist with the others.  Likewise, the RRMD sensor was often higher than the others, although the co-located AHRR sensor does not appear to show such large spikes.  Again, this seems likely to be due to tha sensor manufacturing distribution rather than atmospheric phenomena.
+After excluding data collected during periods of high humidity, the PM data seem to more-or-less agree with each other.  The scatter plot above shows all sensors plotted against the arbitrarily chosen VBAC sensor; the 1:1 line is shown as the dashed line for comparison.  Again, individual best fits for all sensors are not shown in the pursuit of providing a clear graphic.  Notably, the CBALEJ sensor was very low throughout the run, indicating a potential problem with this specific sensor that did not exist with the others.  Likewise, the RRMD sensor was often higher than the others, although the co-located AHRR sensor does not appear to show such large spikes.  Again, this seems likely to be due to the sensor manufacturing distribution rather than atmospheric phenomena.
 
 # Conclusions & Future Directions
 
 The goal of this study was to allow students to conduct a first test of their wheeCAIR sensors in a realistic environment.  In general, the sensors performed well.  Difference in meterology readings compared to the NOAA station are either within the error specification of the sensors, or can be explained by poor siting/exposure (e.g. sensors that read higher temperatures were often exposed to direct sunlight).  In general, PM readings seem to correlate well between sensors, although it's impossible to say from this data if they are accurate.  Future work will compare the sensors to a federal equivalent monitor to test accuracy.  Future work will also explore the differences observed in the meteorology data and attempt to identify/employ better siting protocols to avoid inaccuracies in the data.
 
 The major problem noted during the study was the susceptibility of the sensors to fog.  There are presumably several ways around this, which could include hardware improvements (e.g. adding a Nafion dryer/diffusion dryer or heating the air prior to measurement) and/or software improvements (e.g. using image recognition to find periods of fog and automatically exclude those data).  Future work will focus on both avenues for improvement.
+
+As a final note, the VOC data is not yet analyzed here.  Initial results showed it to be highly variable, show little correlation between sensors, and be very temperature-dependent; therefore, it is not shown here.
 
 
 # References
