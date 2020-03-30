@@ -16,11 +16,18 @@ Over the past decade, improvements in low-cost and open-source microcontrollers 
 
 During this study, students enrolled in Chemistry 191: Issues in Environmental Chemistry at Western Carolina University will develop low-cost sensors capable of being deployed in a network such as that discussed above. Each sensor will measure temperature, relative humidity, barometric pressure, volatile organic carbon (VOC) abundance, and concentration of particulate matter less than 2.5 μm in diameter
 (PM2.5) and will cost roughly $100. Once complete, the sensors will be deployed for a field campaign at a “pristine” site at Purchase Knob in the Great Smoky Mountains National Park and at a rural-urban site in Sylva, NC.
+
 Note that this is a primarily educational project that aims to engage students in learning about air quality and chemical analysis. The student goals of the study are to: (1) compare PM2.5 levels between a pristine and urban site and track changes in PM2.5 levels at both sites during the transition from fall into winter, (2) look for correlations between the sensors’ VOC readings and ozone concentrations reported by the North Carolina Department of Environmental Quality ozone sensor installed at Purchase Knob, and (3) validate the sensors’ temperature, humidity, and pressure readings against the research-grade weather station installed at Purchase Knob.
 
 # Materials and Methods
 
-**Table 1: Sensors Used**  
+## Hardware Design
+
+The Cullowhee Clean Air ("wheeCAIR") sensors are sub-$100 sensors capable of measuring temperature, relative humidity, pressure, volatile organic compounds (VOCs), and particulate matter (PM).  At the heart of the sensor is a 32-bit, 120 MHz ARM Cortex-M4 microcontroller in the form of a Teensy 3.5 (pjrc.com).  The Teensy 3.5 contains an onboard real-time clock and SD card for long-term data logging, and communicates with a Honeywell HPMA115S0-XXX PM sensor via one of its serial ports and an Bosch BME-680 temperature, humidity, pressure, and VOC sensor via the I<sup>2</sup>C protocol. Table 1 provides part numbers for the sensors, while the figure below shows a block diagram of the wheeCAIR sensors. A full bill-of-materials is available in Appendix 1, and photos of the sensors are provided in Appendix 2.  The microcontroller, both sensors, and a battery pack are connected via a custom printed circuit board (PCB, OSHPark) and housed in a weatherproof PVC type-LB conduit body with a 3.2 cm diameter opening at the top and bottom for air ingress and egress, respectively (Figure A2-2).  A small fan in the HPMA sensor actively draws air into the enclosure. Sensors may be powered either by a battery pack (3 1.5 V alkaline batteries or a 5V rechargeable battery) or by USB.  
+
+![**Figure 1:** Block diagram of the wheeCAIR sensors.  The battery pack consists of 3 C-type batteries and may be replaced with a standard 5-V USB power supply or rechargeable batter pack if desired.](../../../../WheeCAIR/hardware/sensorBlockDiagram.png)
+
+**Table 1: Component Sensors in the wheeCAIR Platform**  
 
 | Measurement                     | Sensor                  |
 | ------------------------------- | ----------------------- |
@@ -30,6 +37,15 @@ Note that this is a primarily educational project that aims to engage students i
 | Relative Humidity               | Bosch BME-680           |
 | Pressure                        | Bosch BME-680           |
 
+## Software Design
+
+The wheeCAIR sensors were programmed using the Arduino "language" and IDE (Arduino.cc), with the Teensyduino add on (pjrc.com). The sensors were designed and programmed for prolonged battery life to allow long-term field experiments where power is not availble.  The sensors are usually kept turned off after each measurement and the microcontroller is placed in a low-power hibernation mode. The microcontroller wakes every 10 minutes to turn the sensors one, complete a 30-second measurement, record the timestamp, and log the data.  Standard C-type alkaline batteries will last at least one month using this program.  A block diagram of the sensor algorithm is show in the figure below.
+
+![Block diagram of the wheeCAIR program.](../../../../WheeCAIR/hardware/programBlockDiagram.png)
+
+## Field Deployment
+
+The sensors were deployed at The Appalachian Highlands Science Learning Center near Purchase Knob in the Great Smoky Mountains National Park on October 21, 2019.  The sensors were affixed to trees using cable ties and left to collect data until November 17, 2019, at which point they were collected and the data were retrieved from the SD cards.  A full list of sensor GPS coordinates is located in Appendix 3.
 
 
 # Results and Data Processing
@@ -90,13 +106,13 @@ Now I can take a quick glance at the data.  I will look at the temperature data 
 
 ```julia
 
-p = plot(grid = false, legend = :outertopright, 
+p = plot(grid = false, legend = :outertopright,
     framestyle = :box, fg_legend = :transparent
 )
 for i = 1:length(X)
     p = plot!(
         X[i][!, :Timestamp], X[i][!, :P],
-        label = X[i][1, :Sensor] 
+        label = X[i][1, :Sensor]
    )
 end
 xlabel!("Timestamp"); ylabel!("Temperature (°C)");
@@ -128,7 +144,7 @@ Now, plotting the corrected data using the previous plotting code it looks much 
 ```julia echo = false
 p = plot(
         ylim=(825, 875),
-        grid = false, legend = :outertopright, 
+        grid = false, legend = :outertopright,
         framestyle = :box, fg_legend = :transparent    
     )
 for i = 1:length(X)
@@ -178,7 +194,7 @@ noaa[noaa[!, :RH_Avg] .> 100, :RH_Avg] .= Ref(100);
 
 Data from NOAA is provided every 15 minutes.  Data from wheeCAIR sensor is provided every 10 minutes.  Data for both will be aggregated into 1-hour averages for this reason.
 
-I added a 20 minute offset.
+I added a 60 minute offset.
 
 ```julia
 noaa[!, :Hour] = floor.(noaa[!, :TIMESTAMP], Dates.Hour);
@@ -202,14 +218,14 @@ end
 ```
 
 ```julia
-t_ts = plot(grid = false, legend = :outertopright, 
+t_ts = plot(grid = false, legend = :outertopright,
     framestyle = :box, fg_legend = :transparent,
     ylims = (-20, 30)
 )
 for i = 1:length(whee_mean)
     p = plot!(
         whee_mean[i][!, :Timestamp], whee_mean[i][!, :T],
-        label = whee_mean[i][1, :Sensor] 
+        label = whee_mean[i][1, :Sensor]
    )
 end
 plot!(noaa_mean[!, :Timestamp], noaa_mean[!, :T], label = "NOAA")
@@ -220,13 +236,13 @@ display(t_ts)
 
 ```julia
 t_scatter = scatter(
-    grid = false, legend = :topleft, 
+    grid = false, legend = :topleft,
     framestyle = :box, fg_legend = :transparent,
     xlims = (-20, 30), ylims = (-20, 30),
 )
 for i in 1:length(whee_mean)
     scatter!(
-        noaa_mean[1:nrow(whee_mean[i]), :T], 
+        noaa_mean[1:nrow(whee_mean[i]), :T],
         whee_mean[i][!, :T], label = whee_mean[i][1, :Sensor]
     )
 end
@@ -236,6 +252,8 @@ ylabel!("Temperature-wheeCAIR (°C)"); xlabel!("Temperature-NOAA (°C)");
 savefig("plots/temp_scatter.pdf")
 display(t_scatter)
 ```
+
+The scatter plot above shows all wheeCAIR temperature readings against the NOAA weather station readings.  A 1:1 line is shown for comparison.  For clarity, lines of best-fit for each specific sensor are omitted here.
 
 ```julia
 t_box = plot(
@@ -259,6 +277,29 @@ xlabel!("Sensor Number"); ylabel!("\\Delta T (°C vs. NOAA)")
 savefig("plots/temp_boxplot.pdf")
 display(t_box)
 ```
+
+The box and violin plot above shows the statistics and distribution for of the difference in temperature measured by each wheeCAIR sensor and the NOAA station.  In other words, all sensors should show a tight distribution around 0 if accurate. The manufacturer specifies a temperature accuracy of ±1°C for the BME-680, and all sensors showed a median difference (shown as the middle line on the box plots) within that error.  However, all sensors showed deviation far outside this range at time.  It appears the more exposed sensors had larger fluctuations in temperature (as would be expected).  For example, the EBAM sensor was installed on the side of the air-quality shed at Purchase Knob and received more direct sunlight than any other sensor.  Resultantly, it often reads higher temperature than the others.  Likewise, the CBALEJ, AHRR, and RRMD sensors were the most sheltered (located under in the forest under tree cover) and showed the smallest spreads compared to the NOAA sensor.  It's unclear how much of this spread is due to siting and/or sensor design and how much is due to imprecision in the sensor itself at this point.
+
+
+```julia
+rh_scatter = scatter(
+    grid = false, legend = :topleft,
+    framestyle = :box, fg_legend = :transparent,
+    xlims = (0, 100), ylims = (0, 100),
+)
+for i in 1:length(whee_mean)
+    scatter!(
+        noaa_mean[1:nrow(whee_mean[i]), :RH],
+        whee_mean[i][!, :RH], label = whee_mean[i][1, :Sensor]
+    )
+end
+plot!(one_to_one, -10, 110, color = :black, linestyle = :dash, label = "1:1")
+ylabel!("RH-wheeCAIR (%)"); xlabel!("RH-NOAA (%)");
+savefig("plots/rh_scatter.pdf")
+display(rh_scatter)
+```
+
+The scatter plot above shows all wheeCAIR RH readings against the NOAA weather station readings.  A 1:1 line is shown for comparison.  For clarity, lines of best-fit for each specific sensor are omitted here.
 
 ```julia
 rh_box = plot(
@@ -285,23 +326,7 @@ savefig("plots/rh_boxplot.pdf")
 display(rh_box)
 ```
 
-```julia
-rh_scatter = scatter(
-    grid = false, legend = :topleft, 
-    framestyle = :box, fg_legend = :transparent,
-    xlims = (0, 100), ylims = (0, 100),
-)
-for i in 1:length(whee_mean)
-    scatter!(
-        noaa_mean[1:nrow(whee_mean[i]), :RH], 
-        whee_mean[i][!, :RH], label = whee_mean[i][1, :Sensor]
-    )
-end
-plot!(one_to_one, -10, 110, color = :black, linestyle = :dash, label = "1:1")
-ylabel!("RH-wheeCAIR (%)"); xlabel!("RH-NOAA (%)");
-savefig("plots/rh_scatter.pdf")
-display(rh_scatter)
-```
+The box and violin plot above shows the statistics and distribution for of the difference in relative humidity measured by each wheeCAIR sensor and the NOAA station.  In other words, all sensors should show a tight distribution around 0 if accurate. The manufacturer specifies a temperature accuracy of ±3% RH for the BME-680, and all sensors showed a median difference (shown as the middle line on the box plots) within that error.  However, all sensors showed deviation far outside this range at time.  It appears the more exposed sensors had larger fluctuations in temperature (as would be expected).  For example, the EBAM sensor was installed on the side of the air-quality shed at Purchase Knob and received more direct sunlight than any other sensor.  Resultantly, it often reads higher temperature than the others.  Likewise, the CBALEJ, AHRR, and RRMD sensors were the most sheltered (located under in the forest under tree cover) and showed the smallest spreads compared to the NOAA sensor.  It's unclear how much of this spread is due to siting and/or sensor design and how much is due to imprecision in the sensor itself at this point.
 
 ## Exploring PM Data
 
@@ -314,7 +339,7 @@ rh_over80 = @from i in noaa begin
  end
 
 pm_ts = plot(
-    grid = false, legend = :outertopright, 
+    grid = false, legend = :outertopright,
     framestyle = :box, fg_legend = :transparent,
     ylim = (0, 1000)
 )
@@ -335,7 +360,7 @@ One expected source of error is fog.  The RH readings from the NOAA weather stat
 
 An image from the webcam on 2019-10-30 12:00 EDT (shown below) confirms fog was present; likewise, spot checking images from other times indicates the same.
 
-These data will be excluded from further anlaysis.
+These data will be excluded from further analysis.
 
 ![A Purchase Knob webcam image from 2019-10-30 12:00 EDT showing fog present.](img/grpk201910301100.jpg)
 *A Purchase Knob webcam image from 2019-10-30 12:00 EDT showing fog present. [National Park Service/public domain]*
@@ -358,7 +383,7 @@ for i in 1:length(X)
     ))
 end
 pm_ts = plot(
-    grid = false, legend = :outertopright, 
+    grid = false, legend = :outertopright,
     framestyle = :box, fg_legend = :transparent
     # ylim = (0, 20)
 )
@@ -375,7 +400,7 @@ display(pm_ts)
 
 ```julia
 pm_scatter = plot(
-    grid = false, legend = :bottomright, 
+    grid = false, legend = :bottomright,
     framestyle = :box, fg_legend = :transparent,
     xlims = (0, 10), ylims = (0, 10)
 )
@@ -391,6 +416,13 @@ xlabel!("[PM]-VBAC (\\mug / m³)"); ylabel!("[PM]-Other (\\mug / m³)");
 savefig("plots/pm_scatter.pdf");
 display(pm_scatter)
 ```
+
+# Conlcusions & Future Directions
+
+The goal of this study was to allow students to conduct a first test of their wheeCAIR sensors in a realistic environment.  In general, the sensors performed well.  Difference in meterology readings compared to the NOAA station are either within the error specification of the sensors, or can be explained by poor siting/exposure (e.g. sensors that read higher temperatures were often exposed to direct sunlight).  In general, PM readings seem to correlate well between sensors, although it's impossible to say from this data if they are accurate.  Future work will compare the sensors to a federal equivalent monitor to test accuracy.  Future work will also explore the differences observed in the meteorology data and attempt to identify/employ better siting protocols to avoid inaccuracies in the data.
+
+The major problem noted during the study was the susceptibility of the sensors to fog.  There are presumably several ways around this, which could include hardware improvements (e.g. adding a Nafion dryer/diffusion dryer or heating the air prior to measurement) and/or software improvements (e.g. using image recognition to find periods of fog and automatically exclude those data).  Future work will focus on both avenues for improvement.
+
 
 # References
 
@@ -410,8 +442,8 @@ display(pm_scatter)
 | Micro SD                                  | SDSDQM-B35A            | $4.500  | 1   | Amazon   |
 | Teensy 3.5                                | 1568-1443-ND           | $26.250 | 1   | digikey  |
 | USB Cable                                 | WM25438-ND             | $3.710  | 1   | digikey  |
-| Case                                      | Lowe's                 | $7.150  | 1   | Lowe's   |
-| Case Port                                 | Lowe's                 | $1.690  | 0.5 | Lowe's   |
+| Case, PVC, LB Conduit Body                | E986G                  | $7.150  | 1   | Lowe's   |
+| Case Port Cap                             | -                      | $1.690  | 0.5 | Lowe's   |
 | Breadboard                                | 1738-1326-ND           | $2.990  | 1   | digikey  |
 | Wire, Hookup, Assortment, 10x25'          | 485-3174               | $29.950 | 0.1 | mouser   |
 | Pin headers, Breakaway, 36 position, 0.1" | WM50014-36-ND          | $0.901  | 2   | digikey  |
@@ -435,3 +467,25 @@ display(pm_scatter)
 | PCB, Custom                               | WheeCAIR v1.0 (custom) | $6.820  | 1   | OSH Park |
 
 *Prices are accurate as of December 2019.*
+
+# Appendix 2: Photos of the Sensor
+
+## Sensor Photos
+
+![**Figure A2-1:** Bottom (left) and top (right) view of the sensors, as soldered and assembled by students in the CHEM 191 class.](../../../../WheeCAIR/hardware/photos/photoSensors.png)
+
+## Enclosure Photo
+
+![**Figure A2-2:** Photo of the sensors in their enclosure and installed in Great Smoky Mountains National Park](../../../../WheeCAIR/hardware/photos/photoEnclosure.png)
+
+# Appendix 3: Sensor GPS Coordinates
+
+| Sensor Name | GPS Coordinates (UTM) | Latitude | Longitude | Cover Type               |
+| ----------- | --------------------- | -------- | --------- | ------------------------ |
+| AHRR        | 17 N 302441 3940375   | 35.58740 | -83.18052 | Forest                   |
+| APBW        | 17 N 312071 3940169   | 35.58742 | -83.07424 | Forest Edge              |
+| CBALEJ      | 17 N 312071 3940169   | 35.58742 | -83.07424 | Forest                   |
+| EBAM        | 17 N 312077 3940168   | 35.58741 | -83.07418 | Field/Exposed            |
+| NCZV        | 17 N 312077 3940168   | 35.58741 | -83.07418 | Field/Under Rhododendron |
+| RRMD        | 17 N 302441 3940375   | 35.58740 | -83.18052 | Forest                   |
+| VBAC        | 17 N 312071 3940169   | 35.58742 | -83.07424 | Forest Edge              |
