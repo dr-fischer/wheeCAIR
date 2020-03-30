@@ -3,13 +3,17 @@
 ```
 WheeCAIR
        |----- data
-       |         |----- location (see codes below)
-       |                       |----- year > date_sensorName.txt
-       |                                 | > .jmd or .jl Julia data processing code
-       |                                 |----- met > meteorology data (if available)
+       |         |----- [location] (see codes below)
+       |                       |----- [year] > [date_sensorName].txt
+       |                                 |   > [location-year].jmd or .jl - Julia data processing code
+       |                                 |   > [location-year].html - HTML formatted lab notebook
        |                                 |----- datasheets > datasheets completed at deployment
+       |                                 |----- img > Webcam/weather images (if available)
+       |                                 |----- met > meteorology data (if available)
+       |                                 |----- plots > PDFs of key figures
        |----- firmware > code used program sensors
        |----- hardware > hardware info
+       |----- docs > html to serve (notebooks)
 ```
 
 # Location Codes
