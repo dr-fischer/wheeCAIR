@@ -25,7 +25,8 @@ Note that this is a primarily educational project that aims to engage students i
 
 The Cullowhee Clean Air ("wheeCAIR") sensors are sub-$100 sensors capable of measuring temperature, relative humidity, pressure, volatile organic compounds (VOCs), and particulate matter (PM).  At the heart of the sensor is a 32-bit, 120 MHz ARM Cortex-M4 microcontroller in the form of a Teensy 3.5 (pjrc.com).  The Teensy 3.5 contains an onboard real-time clock and SD card for long-term data logging, and communicates with a Honeywell HPMA115S0-XXX PM sensor via one of its serial ports and an Bosch BME-680 temperature, humidity, pressure, and VOC sensor via the I<sup>2</sup>C protocol. Table 1 provides part numbers for the sensors, while the figure below shows a block diagram of the wheeCAIR sensors. A full bill-of-materials is available in Appendix 1, and photos of the sensors are provided in Appendix 2.  The microcontroller, both sensors, and a battery pack are connected via a custom printed circuit board (PCB, OSHPark) and housed in a weatherproof PVC type-LB conduit body with a 3.2 cm diameter opening at the top and bottom for air ingress and egress, respectively (Figure A2-2).  A small fan in the HPMA sensor actively draws air into the enclosure. Sensors may be powered either by a battery pack (3 1.5 V alkaline batteries or a 5V rechargeable battery) or by USB.  
 
-![**Figure 1:** Block diagram of the wheeCAIR sensors.  The battery pack consists of 3 C-type batteries and may be replaced with a standard 5-V USB power supply or rechargeable batter pack if desired.](../../../../WheeCAIR/hardware/sensorBlockDiagram.png)
+![**Figure 1:** Block diagram of the wheeCAIR sensors.  The battery pack consists of 3 C-type batteries and may be replaced with a standard 5-V USB power supply or rechargeable batter pack if desired.](../../WheeCAIR/hardware/sensorBlockDiagram.png)
+*Block diagram of the wheeCAIR sensors.  The battery pack consists of 3 C-type batteries and may be replaced with a standard 5-V USB power supply or rechargeable batter pack if desired.*
 
 **Table 1: Component Sensors in the wheeCAIR Platform**  
 
@@ -39,9 +40,10 @@ The Cullowhee Clean Air ("wheeCAIR") sensors are sub-$100 sensors capable of mea
 
 ## Software Design
 
-The wheeCAIR sensors were programmed using the Arduino "language" and IDE (Arduino.cc), with the Teensyduino add on (pjrc.com). The sensors were designed and programmed for prolonged battery life to allow long-term field experiments where power is not availble.  The sensors are usually kept turned off after each measurement and the microcontroller is placed in a low-power hibernation mode. The microcontroller wakes every 10 minutes to turn the sensors one, complete a 30-second measurement, record the timestamp, and log the data.  Standard C-type alkaline batteries will last at least one month using this program.  A block diagram of the sensor algorithm is show in the figure below.
+The wheeCAIR sensors were programmed using the Arduino "language" and IDE (Arduino.cc), with the Teensyduino add on (pjrc.com). The sensors were designed and programmed for prolonged battery life to allow long-term field experiments where power is not available.  The sensors are usually kept turned off after each measurement and the microcontroller is placed in a low-power hibernation mode. The microcontroller wakes every 10 minutes to turn the sensors one, complete a 30-second measurement, record the timestamp, and log the data.  Standard C-type alkaline batteries will last at least one month using this program.  A block diagram of the sensor algorithm is show in the figure below.
 
-![Block diagram of the wheeCAIR program.](../../../../WheeCAIR/hardware/programBlockDiagram.png)
+![Block diagram of the wheeCAIR program.](../../WheeCAIR/hardware/programBlockDiagram.png)
+*Block diagram of the wheeCAIR program.*
 
 ## Field Deployment
 
@@ -477,11 +479,13 @@ As a final note, the VOC data is not yet analyzed here.  Initial results showed 
 
 ## Sensor Photos
 
-![**Figure A2-1:** Bottom (left) and top (right) view of the sensors, as soldered and assembled by students in the CHEM 191 class.](../../../../WheeCAIR/hardware/photos/photoSensors.png)
+![**Figure A2-1:** Bottom (left) and top (right) view of the sensors, as soldered and assembled by students in the CHEM 191 class.](../../WheeCAIR/hardware/photos/photoSensors.png)
+**Figure A2-1:** *Bottom (left) and top (right) view of the sensors, as soldered and assembled by students in the CHEM 191 class.*
 
 ## Enclosure Photo
 
-![**Figure A2-2:** Photo of the sensors in their enclosure and installed in Great Smoky Mountains National Park](../../../../WheeCAIR/hardware/photos/photoEnclosure.png)
+![**Figure A2-2:** Photo of the sensors in their enclosure and installed in Great Smoky Mountains National Park](../../WheeCAIR/hardware/photos/photoEnclosure.png)
+**Figure A2-2:** *Photo of the sensors in their enclosure and installed in Great Smoky Mountains National Park.*
 
 # Appendix 3: Sensor GPS Coordinates
 
