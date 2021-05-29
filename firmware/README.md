@@ -1,3 +1,7 @@
+# Instructions
+
+Use `wheeCAIR.ino` and `wheeCAIR.h` for battery operation.  Use `wheeCAIR_serial.ino` and `wheeCAIR_serial.h` to send data to a computer's serial port (e.g. to use the [Julia plotting script](https://github.com/dr-fischer/wheeCAIR/tree/master/software)).
+
 # Dependencies
 
 This code uses the [HPMA library](https://github.com/dr-fischer/HPMA115S0) by [Electonza](https://github.com/Electronza/HPMA115S0).  More info is available here in their [blog post](https://medium.com/electronza/arduino-measuring-pm2-5-and-pm10-with-honeywell-hpma115s0-703f384c485a).
