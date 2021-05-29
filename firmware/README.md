@@ -1,3 +1,7 @@
+# Dependencies
+
+This code uses the [HPMA library](https://github.com/dr-fischer/HPMA115S0) by [Electonza](https://github.com/Electronza/HPMA115S0).  More info is available here in their [blog post](https://medium.com/electronza/arduino-measuring-pm2-5-and-pm10-with-honeywell-hpma115s0-703f384c485a).
+
 # CHEM 191 Air Sensor Function Descriptions
 
 The following functions are available for programming your sensors.  You will need to use all of them, and you might use some twice.  Combine them according to the flow chart provided.
