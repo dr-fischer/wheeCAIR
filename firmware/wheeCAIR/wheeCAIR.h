@@ -6,7 +6,6 @@
 #include "Adafruit_BME680.h"
 #include <hpma115s0.h>
 #include <SD.h>
-#include <SD.h>
 
 bool my_status;
 float p25;
@@ -103,26 +102,24 @@ String printData(String ID, float t, float h, float p, float g, float pm25) {
 
 //////
 
-float performPMReading() {
+float performPMReading(int n) {
     float pavg = 0.0;
     float psum = 0.0;
     
-    for (int i = 1; i < 21; i++) {
+    for (int i = 1; i < n; i++) {
       my_status = my_hpm.read(&p25, &p10);
       if (i > 15) {         // throw away first points while it warms up
-          if (i % 2 == 0 && i < 20) {
-//             digitalWrite(LED_BUILTIN, HIGH);
-          }
-          else {
-//             digitalWrite(LED_BUILTIN, LOW);
-          }
           psum = psum + p25;
           pavg = (psum)/(float(i)-15.0);
-          }   
-          delay(1000);
-//          digitalWrite(LED_BUILTIN, LOW);        
+        }   
+          delay(1000);    
     }
-    return pavg;
+    if (pavg > 0) {
+      return pavg;
+    }
+    else {
+      return -999;
+    }
 }
 
 void writeFile(char filename[16], String dataString) {

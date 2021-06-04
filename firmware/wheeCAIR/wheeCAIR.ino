@@ -2,12 +2,11 @@
 // (c) 2019-2021 Al Fischer, dfischer@wcu.edu
 // written for Teensy 3.5 + BME680 (Seeed Studio) + Honeywell HPMA PM sensor
 
-String deviceID = "MACK"; // change length of array in 3 places
+String deviceID = "SUTTONBRANCH2"; // change length of array in 3 places
 
 #include "wheeCAIR.h"
 
 void setup() {
-  // put your setup code here, to run once:
   pinMode(33, OUTPUT);
   turnSensorsOn();
   
@@ -26,16 +25,14 @@ void setup() {
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
   Snooze.hibernate(config_teensy35); 
   turnSensorsOn();
   bme.performReading();
-  float pavg = performPMReading();
+  float pavg = performPMReading(30);
   dataString = printData(deviceID, bme.temperature, bme.humidity, bme.pressure, bme.gas_resistance, pavg);
   delay(100);
 //  Serial.println(dataString); // uncomment to use serial port
   delay(1000);
-//  Serial.println(dataFileName);
   writeFile(dataFileName, dataString);
   delay(500);
   turnSensorsOff();

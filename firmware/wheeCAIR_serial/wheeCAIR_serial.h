@@ -110,19 +110,17 @@ float performPMReading(int n) {
     for (int i = 1; i < n; i++) {
       my_status = my_hpm.read(&p25, &p10);
       if (i > 15) {         // throw away first points while it warms up
-          if (i % 2 == 0 && i < n) {
-//             digitalWrite(LED_BUILTIN, HIGH);
-          }
-          else {
-//             digitalWrite(LED_BUILTIN, LOW);
-          }
           psum = psum + p25;
           pavg = (psum)/(float(i)-15.0);
-          }   
-          delay(1000);
-//          digitalWrite(LED_BUILTIN, LOW);        
+        }   
+          delay(1000);    
     }
-    return pavg;
+    if (pavg > 0) {
+      return pavg;
+    }
+    else {
+      return -999;
+    }
 }
 
 void writeFile(char filename[16], String dataString) {
@@ -131,10 +129,8 @@ void writeFile(char filename[16], String dataString) {
         dataFile.println(dataString);
         delay(500);
         dataFile.close();
-//        Serial.println("if");
      }
      else {
-//      Serial.println("else");
       delay(1000);
       return;
      }

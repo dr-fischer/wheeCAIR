@@ -5,7 +5,7 @@ String deviceID = "MACK";
 void setup() {
   setSyncProvider(getTeensy3Time);
   pinMode(33, OUTPUT);
-  turnSensorsOn(); 
+  turnSensorsOn();
   pinMode(LED_BUILTIN, OUTPUT);
   createFileName(year(), month(), day()).toCharArray(dataFileName, 16);
   setBMESamplingParameters();
@@ -15,7 +15,7 @@ void setup() {
 
 void loop() {
   bme.performReading();
-  float pavg = performPMReading(30); // enter number of averages, n; actual number of averages is n-15
+  float pavg = performPMReading(30);
   dataString = printData(deviceID, bme.temperature, bme.humidity, bme.pressure, bme.gas_resistance, pavg);
   delay(100);
   Serial.println(dataString);

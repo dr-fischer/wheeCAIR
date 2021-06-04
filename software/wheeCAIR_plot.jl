@@ -33,7 +33,9 @@ $(@bind ticks Clock(30,true))
 
 # ╔═╡ ad38d8a6-c0b0-11eb-3a49-0d07d6e53c96
 function readData()
-	return CSV.read(currentfilename, DataFrame, header = ["Sensor", "Timestamp", "Temp_C", "RH", "P_hPa", "VOC_arb", "PM_ugm3"])
+	d = CSV.read(currentfilename, DataFrame, header = ["Sensor", "Timestamp", "Temp_C", "RH", "P_hPa", "VOC_arb", "PM_ugm3"])
+	d.PM_ugm3[∈([-999]).(d.PM_ugm3)] = missing
+	return d
 end;
 
 # ╔═╡ 1c5286fb-1234-4370-b12b-a697b0cbf4e4
