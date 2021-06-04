@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.14.5
+# v0.14.7
 
 using Markdown
 using InteractiveUtils
@@ -34,7 +34,7 @@ $(@bind ticks Clock(30,true))
 # ╔═╡ ad38d8a6-c0b0-11eb-3a49-0d07d6e53c96
 function readData()
 	d = CSV.read(currentfilename, DataFrame, header = ["Sensor", "Timestamp", "Temp_C", "RH", "P_hPa", "VOC_arb", "PM_ugm3"])
-	d.PM_ugm3[∈([-999]).(d.PM_ugm3)] = missing
+	d.PM_ugm3[∈([-999]).(d.PM_ugm3)] .= NaN
 	return d
 end;
 
@@ -74,7 +74,7 @@ end
 # ╟─98598ea0-e4f3-41ef-9b56-cf4b3537aeaf
 # ╟─0446c13c-ad2a-42c1-ac84-aa2cefc29db5
 # ╟─1c5286fb-1234-4370-b12b-a697b0cbf4e4
-# ╟─ad38d8a6-c0b0-11eb-3a49-0d07d6e53c96
+# ╠═ad38d8a6-c0b0-11eb-3a49-0d07d6e53c96
 # ╟─b7da6276-89c4-4603-ab93-f66def8d18f6
 # ╟─9b99e2f3-0074-46f5-9e55-1f8632dc515e
 # ╟─c123f16a-dc62-436d-be64-b07dbc2f9461
