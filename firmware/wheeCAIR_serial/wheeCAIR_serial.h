@@ -109,12 +109,17 @@ float performPMReading(int n) {
     
     for (int i = 1; i < n; i++) {
       my_status = my_hpm.read(&p25, &p10);
-      if (i > 15) {         // throw away first points while it warms up
+      if (i > 15 && my_status == 1) {         // throw away first points while it warms up
           psum = psum + p25;
           pavg = (psum)/(float(i)-15.0);
-        }   
+        }
+      else if (i > 15 && muy_status == 0) {
+          pavg = -999.0; 
+      }
+      else {
           delay(1000);    
-    }
+      }
+      }
     if (pavg > 0) {
       return pavg;
     }
