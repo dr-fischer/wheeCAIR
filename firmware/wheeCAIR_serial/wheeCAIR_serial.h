@@ -113,7 +113,7 @@ float performPMReading(int n) {
           psum = psum + p25;
           pavg = (psum)/(float(i)-15.0);
         }
-      else if (i > 15 && muy_status == 0) {
+      else if (i > 15 && my_status == 0) {
           pavg = -999.0; 
       }
       else {
